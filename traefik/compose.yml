@@ -1,0 +1,92 @@
+services:
+    traefik:
+        image: traefik:v3.7.15
+        container_name: traefik
+        restart: unless-stopped
+        user: "1002:1000"
+        group_add:
+            - "990" # Docker group
+        security_opt:
+            - no-new-privileges:true
+        networks:
+            - aether-net
+        ports:
+            - 80:80
+            - 443:443
+            # - 443:443/tcp # Uncomment if you want HTTP3
+            # - 443:443/udp # Uncomment if you want HTTP3
+        command:
+            - --accesslog.filepath=/var/log/traefik/access.log
+            - --api.insecure=true
+        environment:
+            CF_DNS_API_TOKEN_FILE: /run/secrets/cf_api_token # note using _FILE for docker secrets
+            # TRAEFIK_DASHBOARD_CREDENTIALS: ${TRAEFIK_DASHBOARD_CREDENTIALS}
+        secrets:
+            - cf_api_token
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - ./data/traefik.yml:/traefik.yml:ro
+            - /containers/volumes/traefik/letsencrypt/acme.json:/acme.json
+            - ./data/rules:/etc/traefik/rules:ro
+            - /var/log/traefik:/var/log/traefik
+        labels:
+            - "traefik.enable=true"
+            - "traefik.docker.network=aether-net"
+
+            - "traefik.http.routers.traefik.entrypoints=http"
+            - "traefik.http.routers.traefik.rule=Host(`traefik.kellian.cloud`)"
+            - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+            - "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+            - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
+
+            - "traefik.http.routers.traefik-secure.entrypoints=https"
+            - "traefik.http.routers.traefik-secure.rule=Host(`traefik.kellian.cloud`)"
+            - "traefik.http.routers.traefik-secure.tls=true"
+            - "traefik.http.routers.traefik-secure.tls.certresolver=cloudflare"
+            - "traefik.http.routers.traefik-secure.tls.domains[0].main=kellian.cloud"
+            - "traefik.http.routers.traefik-secure.tls.domains[0].sans=*.kellian.cloud"
+            - "traefik.http.routers.traefik-secure.service=api@internal"
+
+            - "traefik.http.routers.traefik-secure.middlewares=authentik-forward@file"
+
+    cloudflare-ddns:
+        image: favonia/cloudflare-ddns:1
+        # Prefer "1" or "1.x.y" in production.
+        #
+        # - "1" tracks the latest stable release whose major version is 1
+        # - "1.x.y" pins one specific stable version
+        # - "latest" moves to each new stable release and may pick up breaking
+        #   changes in a future major release, so it is not recommended in production
+        # - "edge" tracks the latest unreleased development build
+        network_mode: host
+        # Optional. This bypasses network isolation and makes IPv6 easier.
+        # See "Use IPv6 without sharing the host network".
+        restart: unless-stopped
+        # Restart the updater after reboot
+        user: "1003:1000"
+        # Run the updater with specific user and group IDs (in that order).
+        # You can change the two numbers based on your need.
+        read_only: true
+        # Make the container filesystem read-only (optional but recommended)
+        cap_drop: [all]
+        # Drop all Linux capabilities (optional but recommended)
+        security_opt: [no-new-privileges:true]
+        secrets:
+            - cf_api_token
+        # Another protection to restrict superuser privileges (optional but recommended)
+        environment:
+            IP4_PROVIDER: none # Disable ipv4
+            CLOUDFLARE_API_TOKEN_FILE: /run/secrets/cf_api_token
+            DOMAINS: kellian.cloud,*.kellian.cloud # Domain names
+            PROXIED: true
+            # Leaning toward using Cloudflare's proxy for these domains (optional)
+            # Existing DNS records in Cloudflare keep their current proxy statuses
+
+secrets:
+    cf_api_token:
+        file: ./secrets/cf_api_token
+
+networks:
+    aether-net:
+        external: true

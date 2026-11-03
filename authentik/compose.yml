@@ -1,0 +1,95 @@
+services:
+    postgresql:
+        container_name: authentik-postgresql
+        user: "1001:3500"
+        environment:
+            POSTGRES_DB: ${PG_DB:-authentik}
+            POSTGRES_PASSWORD: ${PG_PASS:?database password required}
+            POSTGRES_USER: ${PG_USER:-authentik}
+        healthcheck:
+            interval: 30s
+            retries: 5
+            start_period: 20s
+            test:
+                - CMD-SHELL
+                - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+            timeout: 5s
+        image: docker.io/library/postgres:16-alpine
+        restart: unless-stopped
+        networks:
+            - authentik-internal
+        volumes:
+            - /containers/volumes/authentik/postgresql:/var/lib/postgresql/data
+    server:
+        container_name: authentik-server
+        user: "1001:3500"
+        command: server
+        depends_on:
+            postgresql:
+                condition: service_healthy
+        environment:
+            AUTHENTIK_POSTGRESQL__HOST: postgresql
+            AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
+            AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+            AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
+            AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?secret key required}
+        image: authentik/server:2026.5.6
+        networks:
+            - authentik-internal
+            - aether-net
+        # ports:
+        # - ${COMPOSE_PORT_HTTP:-9000}:9000
+        # - ${COMPOSE_PORT_HTTPS:-9443}:9443
+        restart: unless-stopped
+        shm_size: 512mb
+        volumes:
+            - /containers/volumes/authentik/data:/data
+            - /containers/volumes/authentik/custom-templates:/templates
+        labels:
+            - "traefik.enable=true"
+
+            # HTTP redirect
+            - "traefik.http.routers.authentik.entrypoints=http"
+            - "traefik.http.routers.authentik.rule=Host(`auth.kellian.cloud`)"
+            - "traefik.http.middlewares.authentik-https-redirect.redirectscheme.scheme=https"
+            - "traefik.http.routers.authentik.middlewares=authentik-https-redirect"
+
+            # HTTPS router
+            - "traefik.http.routers.authentik-secure.entrypoints=https"
+            - "traefik.http.routers.authentik-secure.rule=Host(`auth.kellian.cloud`)"
+            - "traefik.http.routers.authentik-secure.service=authentik"
+            - "traefik.http.routers.authentik-secure.tls=true"
+            - "traefik.http.routers.authentik-secure.tls.certresolver=cloudflare"
+
+            # authentik internal port
+            - "traefik.http.services.authentik.loadbalancer.server.port=9000"
+            - "traefik.http.services.authentik.loadbalancer.server.scheme=http"
+    worker:
+        container_name: authentik-worker
+        user: "1001:3500"
+        command: worker
+        depends_on:
+            postgresql:
+                condition: service_healthy
+        networks:
+            - authentik-internal
+        environment:
+            AUTHENTIK_POSTGRESQL__HOST: postgresql
+            AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
+            AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+            AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
+            AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?secret key required}
+        image: authentik/server:2026.5.6
+        restart: unless-stopped
+        shm_size: 512mb
+        # user: root
+        volumes:
+            # - /var/run/docker.sock:/var/run/docker.sock
+            - /containers/volumes/authentik/data:/data
+            - /containers/volumes/authentik/certs:/certs
+            - /containers/volumes/authentik/custom-templates:/templates
+
+networks:
+    aether-net:
+        external: true
+    authentik-internal:
