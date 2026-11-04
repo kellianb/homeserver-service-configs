@@ -1,0 +1,287 @@
+services:
+    gluetun:
+        image: qmcgaw/gluetun:v3.41.3
+        container_name: gluetun # Other stacks reach qbittorrent/flaresolverr/proxy through this name on aether-net
+        cap_add:
+            - NET_ADMIN
+        devices:
+            - /dev/net/tun:/dev/net/tun
+        environment:
+            - VPN_SERVICE_PROVIDER=protonvpn
+            - VPN_TYPE=wireguard
+            - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+            - SERVER_COUNTRIES=${SERVER_COUNTRIES}
+            # Ports other containers on aether-net may reach (qbittorrent, flaresolverr, http proxy). Not published on the host.
+            - FIREWALL_INPUT_PORTS=8080,8191,8888
+            # HTTP proxy so Prowlarr can send indexer traffic through the VPN (use via an Indexer Proxy + tag)
+            - HTTPPROXY=on
+            - HTTPPROXY_USER=${HTTPPROXY_USER:?proxy user required}
+            - HTTPPROXY_PASSWORD=${HTTPPROXY_PASSWORD:?proxy password required}
+            - PORT_FORWARD_ONLY=on # only use servers that support forwarding
+            - VPN_PORT_FORWARDING=on
+            # Push the forwarded port into qBittorrent whenever it changes
+            - VPN_PORT_FORWARDING_UP_COMMAND=/bin/sh -c 'wget -O- -nv --retry-connrefused --post-data "json={\"listen_port\":{{PORT}},\"current_network_interface\":\"{{VPN_INTERFACE}}\",\"random_port\":false,\"upnp\":false}" http://127.0.0.1:8080/api/v2/app/setPreferences'
+            - VPN_PORT_FORWARDING_DOWN_COMMAND=/bin/sh -c 'wget -O- -nv --retry-connrefused --post-data "json={\"listen_port\":0,\"current_network_interface\":\"lo\"}" http://127.0.0.1:8080/api/v2/app/setPreferences'
+        restart: unless-stopped
+        networks:
+            - aether-net
+        labels:
+            - "traefik.enable=true"
+            - "traefik.docker.network=aether-net"
+
+            # qbittorrent: HTTP redirect
+            - "traefik.http.routers.qbittorrent.entrypoints=http"
+            - "traefik.http.routers.qbittorrent.rule=Host(`qbittorrent.kellian.cloud`)"
+            - "traefik.http.middlewares.qbittorrent-https-redirect.redirectscheme.scheme=https"
+            - "traefik.http.routers.qbittorrent.middlewares=qbittorrent-https-redirect"
+            - "traefik.http.routers.qbittorrent.service=qbittorrent"
+
+            # qbittorrent: HTTPS router
+            - "traefik.http.routers.qbittorrent-secure.entrypoints=https"
+            - "traefik.http.routers.qbittorrent-secure.rule=Host(`qbittorrent.kellian.cloud`)"
+            - "traefik.http.routers.qbittorrent-secure.tls=true"
+            - "traefik.http.routers.qbittorrent-secure.tls.certresolver=cloudflare"
+            - "traefik.http.routers.qbittorrent-secure.middlewares=authentik-forward@file"
+            - "traefik.http.routers.qbittorrent-secure.service=qbittorrent"
+
+            - "traefik.http.services.qbittorrent.loadbalancer.server.port=8080"
+
+    qbittorrent:
+        image: ghcr.io/linuxserver/qbittorrent:5.3.0_v2.1.2-ls486
+        container_name: qbittorrent
+        user: "1010:3500"
+        restart: unless-stopped
+        network_mode: "service:gluetun" # Everything goes through the VPN, no network of its own = kill switch
+        security_opt:
+            - no-new-privileges:true
+        cap_drop:
+            - ALL
+        pids_limit: 512
+        mem_limit: 4g
+        depends_on:
+            gluetun:
+                condition: service_healthy
+                restart: true
+        environment:
+            UMASK: "002"
+            WEBUI_PORT: "8080"
+            TORRENTING_PORT: "6881"
+        tmpfs:
+            - /run:uid=1010,gid=3500,exec
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - /containers/volumes/qbittorrent:/config
+            - /media/downloads:/media/downloads
+
+    flaresolverr:
+        image: ghcr.io/flaresolverr/flaresolverr:v3.5.2
+        container_name: flaresolverr
+        restart: unless-stopped
+        network_mode: "service:gluetun"
+        security_opt:
+            - no-new-privileges:true
+        cap_drop:
+            - ALL
+        pids_limit: 512
+        mem_limit: 1g
+        depends_on:
+            gluetun:
+                condition: service_healthy
+                restart: true
+        environment:
+            LOG_LEVEL: info
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+
+    sonarr:
+        image: ghcr.io/linuxserver/sonarr:4.0.20.3014-ls2
+        container_name: sonarr
+        user: "1006:3500"
+        restart: unless-stopped
+        security_opt:
+            - no-new-privileges:true
+        cap_drop:
+            - ALL
+        networks:
+            - aether-net
+        pids_limit: 512
+        mem_limit: 2g
+        environment:
+            UMASK: "002"
+        tmpfs:
+            - /run:uid=1006,gid=3500,exec
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - /containers/volumes/sonarr:/config
+            - /media:/media
+        labels:
+            - "traefik.enable=true"
+
+            # HTTP redirect
+            - "traefik.http.routers.sonarr.entrypoints=http"
+            - "traefik.http.routers.sonarr.rule=Host(`sonarr.kellian.cloud`)"
+            - "traefik.http.middlewares.sonarr-https-redirect.redirectscheme.scheme=https"
+            - "traefik.http.routers.sonarr.middlewares=sonarr-https-redirect"
+
+            # HTTPS router
+            - "traefik.http.routers.sonarr-secure.entrypoints=https"
+            - "traefik.http.routers.sonarr-secure.rule=Host(`sonarr.kellian.cloud`)"
+            - "traefik.http.routers.sonarr-secure.tls=true"
+            - "traefik.http.routers.sonarr-secure.tls.certresolver=cloudflare"
+            - "traefik.http.routers.sonarr-secure.middlewares=authentik-forward@file"
+
+            - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
+
+    radarr:
+        image: ghcr.io/linuxserver/radarr:6.4.4.10685-ls325
+        container_name: radarr
+        user: "1007:3500"
+        restart: unless-stopped
+        security_opt:
+            - no-new-privileges:true
+        cap_drop:
+            - ALL
+        networks:
+            - aether-net
+        pids_limit: 512
+        mem_limit: 2g
+        environment:
+            UMASK: "002"
+        tmpfs:
+            - /run:uid=1007,gid=3500,exec
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - /containers/volumes/radarr:/config
+            - /media:/media
+        labels:
+            - "traefik.enable=true"
+
+            # HTTP redirect
+            - "traefik.http.routers.radarr.entrypoints=http"
+            - "traefik.http.routers.radarr.rule=Host(`radarr.kellian.cloud`)"
+            - "traefik.http.middlewares.radarr-https-redirect.redirectscheme.scheme=https"
+            - "traefik.http.routers.radarr.middlewares=radarr-https-redirect"
+
+            # HTTPS router
+            - "traefik.http.routers.radarr-secure.entrypoints=https"
+            - "traefik.http.routers.radarr-secure.rule=Host(`radarr.kellian.cloud`)"
+            - "traefik.http.routers.radarr-secure.tls=true"
+            - "traefik.http.routers.radarr-secure.tls.certresolver=cloudflare"
+            - "traefik.http.routers.radarr-secure.middlewares=authentik-forward@file"
+
+            - "traefik.http.services.radarr.loadbalancer.server.port=7878"
+
+    prowlarr:
+        image: ghcr.io/linuxserver/prowlarr:2.7.0.5723-ls166
+        container_name: prowlarr
+        user: "1008:3500"
+        restart: unless-stopped
+        security_opt:
+            - no-new-privileges:true
+        cap_drop:
+            - ALL
+        networks:
+            - aether-net
+        pids_limit: 256
+        mem_limit: 1g
+        tmpfs:
+            - /run:uid=1008,gid=3500,exec
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - /containers/volumes/prowlarr:/config
+        labels:
+            - "traefik.enable=true"
+
+            # HTTP redirect
+            - "traefik.http.routers.prowlarr.entrypoints=http"
+            - "traefik.http.routers.prowlarr.rule=Host(`prowlarr.kellian.cloud`)"
+            - "traefik.http.middlewares.prowlarr-https-redirect.redirectscheme.scheme=https"
+            - "traefik.http.routers.prowlarr.middlewares=prowlarr-https-redirect"
+
+            # HTTPS router
+            - "traefik.http.routers.prowlarr-secure.entrypoints=https"
+            - "traefik.http.routers.prowlarr-secure.rule=Host(`prowlarr.kellian.cloud`)"
+            - "traefik.http.routers.prowlarr-secure.tls=true"
+            - "traefik.http.routers.prowlarr-secure.tls.certresolver=cloudflare"
+            - "traefik.http.routers.prowlarr-secure.middlewares=authentik-forward@file"
+
+            - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
+
+    bazarr:
+        image: ghcr.io/linuxserver/bazarr:v1.6.2-ls370
+        container_name: bazarr
+        user: "1009:3500"
+        restart: unless-stopped
+        security_opt:
+            - no-new-privileges:true
+        cap_drop:
+            - ALL
+        networks:
+            - aether-net
+        pids_limit: 256
+        mem_limit: 1g
+        environment:
+            UMASK: "002"
+        tmpfs:
+            - /run:uid=1009,gid=3500,exec
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - /containers/volumes/bazarr:/config
+            - /media:/media # Writes .srt files next to the media, no downloads access needed but same path as Sonarr/Radarr
+        labels:
+            - "traefik.enable=true"
+
+            # HTTP redirect
+            - "traefik.http.routers.bazarr.entrypoints=http"
+            - "traefik.http.routers.bazarr.rule=Host(`bazarr.kellian.cloud`)"
+            - "traefik.http.middlewares.bazarr-https-redirect.redirectscheme.scheme=https"
+            - "traefik.http.routers.bazarr.middlewares=bazarr-https-redirect"
+
+            # HTTPS router
+            - "traefik.http.routers.bazarr-secure.entrypoints=https"
+            - "traefik.http.routers.bazarr-secure.rule=Host(`bazarr.kellian.cloud`)"
+            - "traefik.http.routers.bazarr-secure.tls=true"
+            - "traefik.http.routers.bazarr-secure.tls.certresolver=cloudflare"
+            - "traefik.http.routers.bazarr-secure.middlewares=authentik-forward@file"
+
+            - "traefik.http.services.bazarr.loadbalancer.server.port=6767"
+
+    seerr:
+        image: ghcr.io/seerr-team/seerr:v3.5.1
+        container_name: seerr
+        user: "1011:3500"
+        init: true
+        restart: unless-stopped
+        security_opt:
+            - no-new-privileges:true
+        cap_drop:
+            - ALL
+        networks:
+            - aether-net
+        pids_limit: 256
+        mem_limit: 1g
+        environment:
+            LOG_LEVEL: info
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - /containers/volumes/seerr:/app/config
+        labels:
+            - "traefik.enable=true"
+
+            # HTTP redirect
+            - "traefik.http.routers.seerr.entrypoints=http"
+            - "traefik.http.routers.seerr.rule=Host(`seerr.kellian.cloud`)"
+            - "traefik.http.middlewares.seerr-https-redirect.redirectscheme.scheme=https"
+            - "traefik.http.routers.seerr.middlewares=seerr-https-redirect"
+
+            # HTTPS router
+            - "traefik.http.routers.seerr-secure.entrypoints=https"
+            - "traefik.http.routers.seerr-secure.rule=Host(`seerr.kellian.cloud`)"
+            - "traefik.http.routers.seerr-secure.tls=true"
+            - "traefik.http.routers.seerr-secure.tls.certresolver=cloudflare"
+
+            - "traefik.http.services.seerr.loadbalancer.server.port=5055"
+
+networks:
+    aether-net:
+        external: true
