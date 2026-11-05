@@ -171,6 +171,45 @@ services:
 
             - "traefik.http.services.radarr.loadbalancer.server.port=7878"
 
+    lidarr:
+        image: ghcr.io/linuxserver/lidarr:3.1.6.5079-ls47
+        container_name: lidarr
+        user: "1012:3500"
+        restart: unless-stopped
+        security_opt:
+            - no-new-privileges:true
+        cap_drop:
+            - ALL
+        networks:
+            - aether-net
+        pids_limit: 512
+        mem_limit: 2g
+        environment:
+            UMASK: "002"
+        tmpfs:
+            - /run:uid=1012,gid=3500,exec
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - /containers/volumes/lidarr:/config
+            - /media:/media
+        labels:
+            - "traefik.enable=true"
+
+            # HTTP redirect
+            - "traefik.http.routers.lidarr.entrypoints=http"
+            - "traefik.http.routers.lidarr.rule=Host(`lidarr.kellian.cloud`)"
+            - "traefik.http.middlewares.lidarr-https-redirect.redirectscheme.scheme=https"
+            - "traefik.http.routers.lidarr.middlewares=lidarr-https-redirect"
+
+            # HTTPS router
+            - "traefik.http.routers.lidarr-secure.entrypoints=https"
+            - "traefik.http.routers.lidarr-secure.rule=Host(`lidarr.kellian.cloud`)"
+            - "traefik.http.routers.lidarr-secure.tls=true"
+            - "traefik.http.routers.lidarr-secure.tls.certresolver=cloudflare"
+            - "traefik.http.routers.lidarr-secure.middlewares=authentik-forward@file"
+
+            - "traefik.http.services.lidarr.loadbalancer.server.port=8686"
+
     prowlarr:
         image: ghcr.io/linuxserver/prowlarr:2.7.0.5723-ls166
         container_name: prowlarr
