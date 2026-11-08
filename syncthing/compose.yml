@@ -4,7 +4,7 @@ services:
         container_name: syncthing
         hostname: pve01-portainer-syncthing
         environment:
-            - PUID=0
+            - PUID=1005
             - PGID=3500
         volumes:
             - /documents:/documents
