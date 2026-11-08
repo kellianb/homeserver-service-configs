@@ -1,6 +1,6 @@
 services:
     traefik:
-        image: traefik:v3.7.15
+        image: traefik:v3.7.15@sha256:0f6150202bc1fed72a7bd2107460eaa510e5b8a905f3fdb5b84f2c8619c33368
         container_name: traefik
         restart: unless-stopped
         user: "1002:1000"
@@ -51,7 +51,7 @@ services:
             - "traefik.http.routers.traefik-secure.middlewares=authentik-forward@file"
 
     cloudflare-ddns:
-        image: favonia/cloudflare-ddns:1
+        image: favonia/cloudflare-ddns:1@sha256:345b41895a8846d74c62d30bd27e61101a754f8ab8da10c68115823883803afb
         # Prefer "1" or "1.x.y" in production.
         #
         # - "1" tracks the latest stable release whose major version is 1
