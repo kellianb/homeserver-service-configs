@@ -14,7 +14,7 @@ services:
                 - CMD-SHELL
                 - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
             timeout: 5s
-        image: docker.io/library/postgres:16-alpine
+        image: docker.io/library/postgres:16-alpine@sha256:aa6cb33cf4c19c765cefcf48d96176258800870a9a1e930ad126200f9d825139
         restart: unless-stopped
         networks:
             - authentik-internal
@@ -33,7 +33,7 @@ services:
             AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
             AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
             AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?secret key required}
-        image: authentik/server:2026.8.5
+        image: authentik/server:2026.8.5@sha256:602227a86455d6772e3d16b7d852713c4f864f40df5df894abd1285bb53979a5
         networks:
             - authentik-internal
             - aether-net
@@ -79,7 +79,7 @@ services:
             AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
             AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
             AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?secret key required}
-        image: authentik/server:2026.8.5
+        image: authentik/server:2026.8.5@sha256:602227a86455d6772e3d16b7d852713c4f864f40df5df894abd1285bb53979a5
         restart: unless-stopped
         shm_size: 512mb
         # user: root
