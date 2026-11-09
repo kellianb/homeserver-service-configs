@@ -6,17 +6,11 @@
   ],
   "timezone": "Europe/Berlin",
   "schedule": ["before 6am on saturday"],
+  "automerge": false,
   "packageRules": [
     {
-      "description": "Automerge minor/patch updates",
-      "matchManagers": ["docker-compose"],
-      "matchUpdateTypes": ["minor", "patch", "digest"],
-      "automerge": true
-    },
-    {
-      "description": "Never automerge majors",
+      "description": "Label major updates so they stand out",
       "matchUpdateTypes": ["major"],
-      "automerge": false,
       "addLabels": ["major-update"]
     },
     {
