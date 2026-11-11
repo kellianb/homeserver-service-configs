@@ -1,0 +1,42 @@
+services:
+    openproject:
+        image: openproject/openproject:17.9@sha256:2578c5c0035db87f9b24eb6a845e4f64299721c5459ee2db2abcfe8911208158
+        container_name: openproject
+        restart: unless-stopped
+        security_opt:
+            - no-new-privileges:true
+        networks:
+            - aether-net
+        pids_limit: 512
+        mem_limit: 4g # Rails + PostgreSQL + memcached in one container
+        environment:
+            SECRET_KEY_BASE: ${OPENPROJECT_SECRET_KEY_BASE}
+            OPENPROJECT_HOST__NAME: openproject.kellian.cloud
+            OPENPROJECT_HTTPS: "true" # TLS is terminated by Traefik
+            OPENPROJECT_DEFAULT__LANGUAGE: en
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - /containers/volumes/openproject/pgdata:/var/openproject/pgdata
+            - /containers/volumes/openproject/assets:/var/openproject/assets
+        labels:
+            - "traefik.enable=true"
+            - "traefik.docker.network=aether-net"
+
+            # HTTP redirect
+            - "traefik.http.routers.openproject.entrypoints=http"
+            - "traefik.http.routers.openproject.rule=Host(`openproject.kellian.cloud`)"
+            - "traefik.http.middlewares.openproject-https-redirect.redirectscheme.scheme=https"
+            - "traefik.http.routers.openproject.middlewares=openproject-https-redirect"
+
+            # HTTPS router
+            - "traefik.http.routers.openproject-secure.entrypoints=https"
+            - "traefik.http.routers.openproject-secure.rule=Host(`openproject.kellian.cloud`)"
+            - "traefik.http.routers.openproject-secure.tls=true"
+            - "traefik.http.routers.openproject-secure.tls.certresolver=cloudflare"
+
+            # openproject internal port
+            - "traefik.http.services.openproject.loadbalancer.server.port=80"
+
+networks:
+    aether-net:
+        external: true
