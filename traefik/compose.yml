@@ -85,7 +85,7 @@ services:
 
 secrets:
     cf_api_token:
-        file: ./secrets/cf_api_token
+        file: /containers/secrets/traefik/cf_api_token
 
 networks:
     aether-net:
