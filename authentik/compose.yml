@@ -1,47 +1,23 @@
 services:
-    authentik-postgresql:
-        container_name: authentik-postgresql
-        user: "1001:3500"
-        environment:
-            POSTGRES_DB: ${PG_DB:-authentik}
-            POSTGRES_PASSWORD: ${PG_PASS:?database password required}
-            POSTGRES_USER: ${PG_USER:-authentik}
-        healthcheck:
-            interval: 30s
-            retries: 5
-            start_period: 20s
-            test:
-                - CMD-SHELL
-                - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
-            timeout: 5s
-        image: docker.io/library/postgres:16-alpine@sha256:aa6cb33cf4c19c765cefcf48d96176258800870a9a1e930ad126200f9d825139
-        restart: unless-stopped
-        networks:
-            - authentik-internal
-        volumes:
-            - /containers/volumes/authentik/postgresql:/var/lib/postgresql/data
     server:
         container_name: authentik-server
         user: "1001:3500"
         command: server
-        depends_on:
-            authentik-postgresql:
-                condition: service_healthy
         environment:
-            AUTHENTIK_POSTGRESQL__HOST: authentik-postgresql
-            AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
-            AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
-            AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
+            AUTHENTIK_POSTGRESQL__HOST: postgresql
+            AUTHENTIK_POSTGRESQL__NAME: authentik
+            AUTHENTIK_POSTGRESQL__PASSWORD: file:///run/secrets/PG_AUTHENTIK_PASSWORD
+            AUTHENTIK_POSTGRESQL__USER: file:///run/secrets/PG_AUTHENTIK_USER
             AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?secret key required}
         image: authentik/server:2026.8.5@sha256:602227a86455d6772e3d16b7d852713c4f864f40df5df894abd1285bb53979a5
         networks:
-            - authentik-internal
             - aether-net
-        # ports:
-        # - ${COMPOSE_PORT_HTTP:-9000}:9000
-        # - ${COMPOSE_PORT_HTTPS:-9443}:9443
+            - postgresql-net
         restart: unless-stopped
         shm_size: 512mb
+        secrets:
+            - PG_AUTHENTIK_USER
+            - PG_AUTHENTIK_PASSWORD
         volumes:
             - /containers/volumes/authentik/data:/data
             - /containers/volumes/authentik/custom-templates:/templates
@@ -64,32 +40,38 @@ services:
             # authentik internal port
             - "traefik.http.services.authentik.loadbalancer.server.port=9000"
             - "traefik.http.services.authentik.loadbalancer.server.scheme=http"
+
     worker:
         container_name: authentik-worker
         user: "1001:3500"
         command: worker
-        depends_on:
-            authentik-postgresql:
-                condition: service_healthy
         networks:
-            - authentik-internal
+            - postgresql-net
         environment:
-            AUTHENTIK_POSTGRESQL__HOST: authentik-postgresql
-            AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
-            AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
-            AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
+            AUTHENTIK_POSTGRESQL__HOST: postgresql
+            AUTHENTIK_POSTGRESQL__NAME: authentik
+            AUTHENTIK_POSTGRESQL__PASSWORD: file:///run/secrets/PG_AUTHENTIK_PASSWORD
+            AUTHENTIK_POSTGRESQL__USER: file:///run/secrets/PG_AUTHENTIK_USER
             AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?secret key required}
         image: authentik/server:2026.8.5@sha256:602227a86455d6772e3d16b7d852713c4f864f40df5df894abd1285bb53979a5
         restart: unless-stopped
         shm_size: 512mb
-        # user: root
+        secrets:
+            - PG_AUTHENTIK_USER
+            - PG_AUTHENTIK_PASSWORD
         volumes:
-            # - /var/run/docker.sock:/var/run/docker.sock
             - /containers/volumes/authentik/data:/data
             - /containers/volumes/authentik/certs:/certs
             - /containers/volumes/authentik/custom-templates:/templates
 
+secrets:
+    PG_AUTHENTIK_USER:
+        file: "/containers/secrets/postgresql/authentik_user"
+    PG_AUTHENTIK_PASSWORD:
+        file: "/containers/secrets/postgresql/authentik_password"
+
 networks:
     aether-net:
         external: true
-    authentik-internal:
+    postgresql-net:
+        external: true
