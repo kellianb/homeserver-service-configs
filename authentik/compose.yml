@@ -1,5 +1,5 @@
 services:
-    postgresql:
+    authentik-postgresql:
         container_name: authentik-postgresql
         user: "1001:3500"
         environment:
@@ -25,10 +25,10 @@ services:
         user: "1001:3500"
         command: server
         depends_on:
-            postgresql:
+            authentik-postgresql:
                 condition: service_healthy
         environment:
-            AUTHENTIK_POSTGRESQL__HOST: postgresql
+            AUTHENTIK_POSTGRESQL__HOST: authentik-postgresql
             AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
             AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
             AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
@@ -69,12 +69,12 @@ services:
         user: "1001:3500"
         command: worker
         depends_on:
-            postgresql:
+            authentik-postgresql:
                 condition: service_healthy
         networks:
             - authentik-internal
         environment:
-            AUTHENTIK_POSTGRESQL__HOST: postgresql
+            AUTHENTIK_POSTGRESQL__HOST: authentik-postgresql
             AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
             AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
             AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
