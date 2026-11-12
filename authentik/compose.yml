@@ -8,7 +8,7 @@ services:
             AUTHENTIK_POSTGRESQL__NAME: authentik
             AUTHENTIK_POSTGRESQL__PASSWORD: file:///run/secrets/PG_AUTHENTIK_PASSWORD
             AUTHENTIK_POSTGRESQL__USER: file:///run/secrets/PG_AUTHENTIK_USER
-            AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?secret key required}
+            AUTHENTIK_SECRET_KEY: file:///run/secrets/AUTHENTIK_SECRET_KEY
         image: authentik/server:2026.8.5@sha256:602227a86455d6772e3d16b7d852713c4f864f40df5df894abd1285bb53979a5
         networks:
             - aether-net
@@ -18,6 +18,7 @@ services:
         secrets:
             - PG_AUTHENTIK_USER
             - PG_AUTHENTIK_PASSWORD
+            - AUTHENTIK_SECRET_KEY
         volumes:
             - /containers/volumes/authentik/data:/data
             - /containers/volumes/authentik/custom-templates:/templates
@@ -52,13 +53,14 @@ services:
             AUTHENTIK_POSTGRESQL__NAME: authentik
             AUTHENTIK_POSTGRESQL__PASSWORD: file:///run/secrets/PG_AUTHENTIK_PASSWORD
             AUTHENTIK_POSTGRESQL__USER: file:///run/secrets/PG_AUTHENTIK_USER
-            AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?secret key required}
+            AUTHENTIK_SECRET_KEY: file:///run/secrets/AUTHENTIK_SECRET_KEY
         image: authentik/server:2026.8.5@sha256:602227a86455d6772e3d16b7d852713c4f864f40df5df894abd1285bb53979a5
         restart: unless-stopped
         shm_size: 512mb
         secrets:
             - PG_AUTHENTIK_USER
             - PG_AUTHENTIK_PASSWORD
+            - AUTHENTIK_SECRET_KEY
         volumes:
             - /containers/volumes/authentik/data:/data
             - /containers/volumes/authentik/certs:/certs
@@ -69,6 +71,8 @@ secrets:
         file: "/containers/secrets/postgresql/authentik_user"
     PG_AUTHENTIK_PASSWORD:
         file: "/containers/secrets/postgresql/authentik_password"
+    AUTHENTIK_SECRET_KEY:
+        file: "/containers/secrets/authentik/secret_key"
 
 networks:
     aether-net:
