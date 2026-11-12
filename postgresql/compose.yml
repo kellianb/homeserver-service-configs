@@ -2,6 +2,19 @@ services:
     postgresql:
         container_name: postgresql
         user: "1013:3500"
+        read_only: true
+        tmpfs:
+            - /tmp
+            - /run/postgresql:uid=1013,gid=3500,mode=0755
+        security_opt:
+            - no-new-privileges:true
+        cap_drop:
+            - ALL
+        deploy:
+            resources:
+                limits:
+                    memory: 4g
+                    pids: 512
         environment:
             POSTGRES_USER_FILE: /run/secrets/PG_ADMIN_USER
             POSTGRES_PASSWORD_FILE: /run/secrets/PG_ADMIN_PASSWORD
