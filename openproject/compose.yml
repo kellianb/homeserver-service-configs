@@ -1,6 +1,8 @@
 services:
     openproject:
-        image: openproject/openproject:17.9@sha256:2578c5c0035db87f9b24eb6a845e4f64299721c5459ee2db2abcfe8911208158
+        build:
+          context: ./custom
+          dockerfile: Containerfile
         container_name: openproject
         restart: unless-stopped
         security_opt:
