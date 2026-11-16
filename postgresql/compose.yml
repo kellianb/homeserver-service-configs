@@ -31,7 +31,7 @@ services:
                 - CMD-SHELL
                 - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
             timeout: 5s
-        image: docker.io/library/postgres:16-alpine@sha256:81e77a4833487b8132fe4b00bedd39dc3f74b8641e387f19312a48f7de218c2e
+        image: docker.io/library/postgres:16.16-alpine3.24@sha256:81e77a4833487b8132fe4b00bedd39dc3f74b8641e387f19312a48f7de218c2e
         restart: unless-stopped
         networks:
             - postgresql-net
