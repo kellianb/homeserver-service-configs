@@ -211,7 +211,7 @@ services:
             - "traefik.http.services.lidarr.loadbalancer.server.port=8686"
 
     prowlarr:
-        image: ghcr.io/linuxserver/prowlarr:2.7.0.5723-ls166@sha256:04be30163fbaf48d6aeee7b5893c9f6614ffbad6d853971df0d6dcdf01c7f104
+        image: ghcr.io/linuxserver/prowlarr:3.0.2.5780-ls169@sha256:45117ba8439e2337a92ffe38a451a4dafc0be771754d05d88cdf102419d09646
         container_name: prowlarr
         user: "1008:3500"
         restart: unless-stopped
