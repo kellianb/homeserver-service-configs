@@ -133,7 +133,7 @@ services:
             - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
 
     radarr:
-        image: ghcr.io/linuxserver/radarr:6.4.4.10685-ls325@sha256:ade5937813c6ae415b29db729386e53fea3ecf067a019849bafbe2d2a6ec02ba
+        image: ghcr.io/linuxserver/radarr:7.0.3.10918-ls328@sha256:044788f5508b7f67a3e0368cdd142c77c4d4cd5aec2efaba53e1a68b6b6231e7
         container_name: radarr
         user: "1007:3500"
         restart: unless-stopped
