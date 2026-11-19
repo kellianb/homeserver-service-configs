@@ -17,8 +17,6 @@ services:
             - "993"
         pids_limit: 512
         mem_limit: 8g
-        ports:
-            - 8096:8096/tcp
         environment:
             - JELLYFIN_CACHE_DIR=/cache
             - JELLYFIN_CONFIG_DIR=/config
