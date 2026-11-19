@@ -172,7 +172,7 @@ services:
             - "traefik.http.services.radarr.loadbalancer.server.port=7878"
 
     lidarr:
-        image: ghcr.io/linuxserver/lidarr:3.1.6.5079-ls48@sha256:a91ef0642c15c9bd7c4260fee98fa99972c61601e37c8a96411d6a9cf0e9ad40
+        image: ghcr.io/linuxserver/lidarr:3.1.6.5079-ls49@sha256:8fb40ada166dd1880cb1b166df5bcbb081107523f20ab60df05c313e2052a467
         container_name: lidarr
         user: "1012:3500"
         restart: unless-stopped
