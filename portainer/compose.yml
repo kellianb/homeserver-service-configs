@@ -1,7 +1,7 @@
 services:
     portainer:
         container_name: portainer
-        image: portainer/portainer-ce:sts@sha256:3609c307943bca8e5c492f69ddd6965df177208b50678a4cff28391c8dd4e96e
+        image: portainer/portainer-ce:2.45.4-alpine@sha256:15f6680e9c3260154684343566df3c168956e352a8cca8a50bcd81ce31df0143
         restart: unless-stopped
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
