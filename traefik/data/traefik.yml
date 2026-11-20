@@ -4,7 +4,17 @@ log:
 
 accessLog:
     format: json
-    filePath: /var/log/traefik/access.log
+    bufferingSize: 100    # buffer writes, reduces I/O
+    filters:
+      statusCodes:
+        - "400-599"       # only log errors
+      retryAttempts: true
+    fields:
+      defaultMode: keep
+      names:
+        ClientUsername: drop
+      headers:
+        defaultMode: drop # headers can be very large
 
 api:
     dashboard: true
@@ -32,8 +42,10 @@ entryPoints:
         address: ":443"
         forwardedHeaders:
             trustedIPs: *cloudflare
+
 serversTransport:
     insecureSkipVerify: true
+
 providers:
     file:
         directory: /etc/traefik/rules
@@ -41,6 +53,7 @@ providers:
     docker:
         endpoint: "unix:///var/run/docker.sock"
         exposedByDefault: false
+
 certificatesResolvers:
     cloudflare:
         acme:
