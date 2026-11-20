@@ -10,6 +10,11 @@ services:
             - no-new-privileges:true
         networks:
             - aether-net
+        logging:
+            driver: json-file
+            options:
+                max-size: "50m"
+                max-file: "5"
         ports:
             - 80:80
             - 443:443
@@ -26,7 +31,6 @@ services:
             - ./data/traefik.yml:/traefik.yml:ro
             - /containers/volumes/traefik/letsencrypt/acme.json:/acme.json
             - ./data/rules:/etc/traefik/rules:ro
-            - /containers/volumes/traefik/logs:/var/log/traefik
         labels:
             - "traefik.enable=true"
             - "traefik.docker.network=aether-net"
