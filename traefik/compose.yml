@@ -29,7 +29,7 @@ services:
             - ./data/traefik.yml:/traefik.yml:ro
             - /containers/volumes/traefik/letsencrypt/acme.json:/acme.json
             - ./data/rules:/etc/traefik/rules:ro
-            - /var/log/traefik:/var/log/traefik
+            - /containers/volumes/traefik/logs:/var/log/traefik
         labels:
             - "traefik.enable=true"
             - "traefik.docker.network=aether-net"
