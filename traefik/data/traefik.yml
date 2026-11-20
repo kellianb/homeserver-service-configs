@@ -1,6 +1,16 @@
+log:
+    level: WARN
+    format: json
+
+accessLog:
+    format: json
+    filePath: /var/log/traefik/access.log
+
 api:
     dashboard: true
     debug: true
+    insecure: true
+
 entryPoints:
     http:
         address: ":80"
@@ -10,8 +20,7 @@ entryPoints:
                     to: https
                     scheme: https
         forwardedHeaders:
-            trustedIPs: &cloudflare
-                # IPv6
+            trustedIPs: &cloudflare # IPv6
                 - "2400:cb00::/32"
                 - "2606:4700::/32"
                 - "2803:f800::/32"
