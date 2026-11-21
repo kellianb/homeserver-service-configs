@@ -15,6 +15,12 @@ services:
             - postgresql-net
         restart: unless-stopped
         shm_size: 512mb
+        healthcheck:
+            test: ["CMD", "ak", "healthcheck"]
+            interval: 30s
+            timeout: 30s
+            retries: 5
+            start_period: 60s
         secrets:
             - PG_AUTHENTIK_USER
             - PG_AUTHENTIK_PASSWORD
@@ -57,6 +63,12 @@ services:
         image: authentik/server:2026.8.6@sha256:da89d8338a3b1889800eb033fd61f8d43f7aa9a1c5a042cb5e03d891b1f0c56c
         restart: unless-stopped
         shm_size: 512mb
+        healthcheck:
+            test: ["CMD", "ak", "healthcheck"]
+            interval: 30s
+            timeout: 30s
+            retries: 5
+            start_period: 60s
         secrets:
             - PG_AUTHENTIK_USER
             - PG_AUTHENTIK_PASSWORD
