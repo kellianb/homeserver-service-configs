@@ -1,110 +1,110 @@
 services:
-    server:
-        container_name: authentik-server
-        user: "1001:3500"
-        command: server
-        read_only: true
-        cap_drop:
-            - ALL
-        security_opt:
-            - no-new-privileges:true
-        tmpfs:
-            - /tmp:uid=1001,gid=3500,mode=1777
-        environment:
-            HOME: /tmp
-            AUTHENTIK_POSTGRESQL__HOST: postgresql
-            AUTHENTIK_POSTGRESQL__NAME: authentik
-            AUTHENTIK_POSTGRESQL__PASSWORD: file:///run/secrets/PG_AUTHENTIK_PASSWORD
-            AUTHENTIK_POSTGRESQL__USER: file:///run/secrets/PG_AUTHENTIK_USER
-            AUTHENTIK_SECRET_KEY: file:///run/secrets/AUTHENTIK_SECRET_KEY
-        image: authentik/server:2026.8.6@sha256:da89d8338a3b1889800eb033fd61f8d43f7aa9a1c5a042cb5e03d891b1f0c56c
-        networks:
-            - aether-net
-            - postgresql-net
-        restart: unless-stopped
-        mem_limit: 4g
-        healthcheck:
-            test: ["CMD", "ak", "healthcheck"]
-            interval: 30s
-            timeout: 30s
-            retries: 5
-            start_period: 60s
-        secrets:
-            - PG_AUTHENTIK_USER
-            - PG_AUTHENTIK_PASSWORD
-            - AUTHENTIK_SECRET_KEY
-        volumes:
-            - /containers/volumes/authentik/data:/data
-            - ./templates:/templates:ro
-            - ./blueprints:/blueprints/custom:ro
-        labels:
-            - "traefik.enable=true"
+  server:
+    container_name: authentik-server
+    user: "1001:3500"
+    command: server
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:uid=1001,gid=3500,mode=1777
+    environment:
+      HOME: /tmp
+      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: file:///run/secrets/PG_AUTHENTIK_PASSWORD
+      AUTHENTIK_POSTGRESQL__USER: file:///run/secrets/PG_AUTHENTIK_USER
+      AUTHENTIK_SECRET_KEY: file:///run/secrets/AUTHENTIK_SECRET_KEY
+    image: authentik/server:2026.8.6@sha256:da89d8338a3b1889800eb033fd61f8d43f7aa9a1c5a042cb5e03d891b1f0c56c
+    networks:
+      - aether-net
+      - postgresql-net
+    restart: unless-stopped
+    mem_limit: 4g
+    healthcheck:
+      test: [ "CMD", "ak", "healthcheck" ]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
+    secrets:
+      - PG_AUTHENTIK_USER
+      - PG_AUTHENTIK_PASSWORD
+      - AUTHENTIK_SECRET_KEY
+    volumes:
+      - /containers/volumes/authentik/data:/data
+      - ./templates:/templates:ro
+      - ./blueprints:/blueprints/custom:ro
+    labels:
+      - "traefik.enable=true"
 
-            # HTTP redirect
-            - "traefik.http.routers.authentik.entrypoints=http"
-            - "traefik.http.routers.authentik.rule=Host(`auth.kellian.cloud`)"
-            - "traefik.http.middlewares.authentik-https-redirect.redirectscheme.scheme=https"
-            - "traefik.http.routers.authentik.middlewares=authentik-https-redirect"
+      # HTTP redirect
+      - "traefik.http.routers.authentik.entrypoints=http"
+      - "traefik.http.routers.authentik.rule=Host(`auth.kellian.cloud`)"
+      - "traefik.http.middlewares.authentik-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.authentik.middlewares=authentik-https-redirect"
 
-            # HTTPS router
-            - "traefik.http.routers.authentik-secure.entrypoints=https"
-            - "traefik.http.routers.authentik-secure.rule=Host(`auth.kellian.cloud`)"
-            - "traefik.http.routers.authentik-secure.service=authentik"
-            - "traefik.http.routers.authentik-secure.tls=true"
-            - "traefik.http.routers.authentik-secure.tls.certresolver=cloudflare"
+      # HTTPS router
+      - "traefik.http.routers.authentik-secure.entrypoints=https"
+      - "traefik.http.routers.authentik-secure.rule=Host(`auth.kellian.cloud`)"
+      - "traefik.http.routers.authentik-secure.service=authentik"
+      - "traefik.http.routers.authentik-secure.tls=true"
+      - "traefik.http.routers.authentik-secure.tls.certresolver=cloudflare"
 
-            # authentik internal port
-            - "traefik.http.services.authentik.loadbalancer.server.port=9000"
-            - "traefik.http.services.authentik.loadbalancer.server.scheme=http"
+      # authentik internal port
+      - "traefik.http.services.authentik.loadbalancer.server.port=9000"
+      - "traefik.http.services.authentik.loadbalancer.server.scheme=http"
 
-    worker:
-        container_name: authentik-worker
-        user: "1001:3500"
-        command: worker
-        networks:
-            - postgresql-net
-        read_only: true
-        cap_drop:
-            - ALL
-        security_opt:
-            - no-new-privileges:true
-        tmpfs:
-            - /tmp:uid=1001,gid=3500,mode=1777
-        environment:
-            HOME: /tmp
-            AUTHENTIK_POSTGRESQL__HOST: postgresql
-            AUTHENTIK_POSTGRESQL__NAME: authentik
-            AUTHENTIK_POSTGRESQL__PASSWORD: file:///run/secrets/PG_AUTHENTIK_PASSWORD
-            AUTHENTIK_POSTGRESQL__USER: file:///run/secrets/PG_AUTHENTIK_USER
-            AUTHENTIK_SECRET_KEY: file:///run/secrets/AUTHENTIK_SECRET_KEY
-        image: authentik/server:2026.8.6@sha256:da89d8338a3b1889800eb033fd61f8d43f7aa9a1c5a042cb5e03d891b1f0c56c
-        restart: unless-stopped
-        mem_limit: 4g
-        healthcheck:
-            test: ["CMD", "ak", "healthcheck"]
-            interval: 30s
-            timeout: 30s
-            retries: 5
-            start_period: 60s
-        secrets:
-            - PG_AUTHENTIK_USER
-            - PG_AUTHENTIK_PASSWORD
-            - AUTHENTIK_SECRET_KEY
-        volumes:
-            - /containers/volumes/authentik/data:/data
-            - /containers/volumes/authentik/certs:/certs
-            - /containers/volumes/authentik/custom-templates:/templates:ro
+  worker:
+    container_name: authentik-worker
+    user: "1001:3500"
+    command: worker
+    networks:
+      - postgresql-net
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:uid=1001,gid=3500,mode=1777
+    environment:
+      HOME: /tmp
+      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: file:///run/secrets/PG_AUTHENTIK_PASSWORD
+      AUTHENTIK_POSTGRESQL__USER: file:///run/secrets/PG_AUTHENTIK_USER
+      AUTHENTIK_SECRET_KEY: file:///run/secrets/AUTHENTIK_SECRET_KEY
+    image: authentik/server:2026.8.6@sha256:da89d8338a3b1889800eb033fd61f8d43f7aa9a1c5a042cb5e03d891b1f0c56c
+    restart: unless-stopped
+    mem_limit: 4g
+    healthcheck:
+      test: [ "CMD", "ak", "healthcheck" ]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
+    secrets:
+      - PG_AUTHENTIK_USER
+      - PG_AUTHENTIK_PASSWORD
+      - AUTHENTIK_SECRET_KEY
+    volumes:
+      - /containers/volumes/authentik/data:/data
+      - /containers/volumes/authentik/certs:/certs
+      - /containers/volumes/authentik/custom-templates:/templates:ro
 
 secrets:
-    PG_AUTHENTIK_USER:
-        file: "/containers/secrets/postgresql/authentik_user"
-    PG_AUTHENTIK_PASSWORD:
-        file: "/containers/secrets/postgresql/authentik_password"
-    AUTHENTIK_SECRET_KEY:
-        file: "/containers/secrets/authentik/secret_key"
+  PG_AUTHENTIK_USER:
+    file: "/containers/secrets/postgresql/authentik_user"
+  PG_AUTHENTIK_PASSWORD:
+    file: "/containers/secrets/postgresql/authentik_password"
+  AUTHENTIK_SECRET_KEY:
+    file: "/containers/secrets/authentik/secret_key"
 
 networks:
-    aether-net:
-        external: true
-    postgresql-net:
-        external: true
+  aether-net:
+    external: true
+  postgresql-net:
+    external: true
