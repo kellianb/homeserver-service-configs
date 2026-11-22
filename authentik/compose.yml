@@ -35,7 +35,8 @@ services:
             - AUTHENTIK_SECRET_KEY
         volumes:
             - /containers/volumes/authentik/data:/data
-            - /containers/volumes/authentik/custom-templates:/templates:ro
+            - ./templates:/templates:ro
+            - ./blueprints:/blueprints/custom:ro
         labels:
             - "traefik.enable=true"
 
