@@ -53,6 +53,7 @@ providers:
     docker:
         endpoint: "unix:///var/run/docker.sock"
         exposedByDefault: false
+        # Required, otherwise traefik might try to reach services over another docker network it does not have access to
         network: aether-net
 
 certificatesResolvers:
