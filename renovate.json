@@ -5,7 +5,9 @@
     "docker:pinDigests"
   ],
   "timezone": "Europe/Berlin",
-  "schedule": ["before 6am on saturday"],
+  "schedule": ["at any time"],
+  "prHourlyLimit": 5,
+  "prConcurrentLimit": 10,
   "automerge": false,
   "packageRules": [
     {
