@@ -3,7 +3,15 @@ services:
         container_name: authentik-server
         user: "1001:3500"
         command: server
+        read_only: true
+        cap_drop:
+            - ALL
+        security_opt:
+            - no-new-privileges:true
+        tmpfs:
+            - /tmp:uid=1001,gid=3500,mode=1777
         environment:
+            HOME: /tmp
             AUTHENTIK_POSTGRESQL__HOST: postgresql
             AUTHENTIK_POSTGRESQL__NAME: authentik
             AUTHENTIK_POSTGRESQL__PASSWORD: file:///run/secrets/PG_AUTHENTIK_PASSWORD
@@ -14,7 +22,7 @@ services:
             - aether-net
             - postgresql-net
         restart: unless-stopped
-        shm_size: 512mb
+        mem_limit: 4g
         healthcheck:
             test: ["CMD", "ak", "healthcheck"]
             interval: 30s
@@ -27,7 +35,7 @@ services:
             - AUTHENTIK_SECRET_KEY
         volumes:
             - /containers/volumes/authentik/data:/data
-            - /containers/volumes/authentik/custom-templates:/templates
+            - /containers/volumes/authentik/custom-templates:/templates:ro
         labels:
             - "traefik.enable=true"
 
@@ -54,7 +62,15 @@ services:
         command: worker
         networks:
             - postgresql-net
+        read_only: true
+        cap_drop:
+            - ALL
+        security_opt:
+            - no-new-privileges:true
+        tmpfs:
+            - /tmp:uid=1001,gid=3500,mode=1777
         environment:
+            HOME: /tmp
             AUTHENTIK_POSTGRESQL__HOST: postgresql
             AUTHENTIK_POSTGRESQL__NAME: authentik
             AUTHENTIK_POSTGRESQL__PASSWORD: file:///run/secrets/PG_AUTHENTIK_PASSWORD
@@ -62,7 +78,7 @@ services:
             AUTHENTIK_SECRET_KEY: file:///run/secrets/AUTHENTIK_SECRET_KEY
         image: authentik/server:2026.8.6@sha256:da89d8338a3b1889800eb033fd61f8d43f7aa9a1c5a042cb5e03d891b1f0c56c
         restart: unless-stopped
-        shm_size: 512mb
+        mem_limit: 4g
         healthcheck:
             test: ["CMD", "ak", "healthcheck"]
             interval: 30s
@@ -76,7 +92,7 @@ services:
         volumes:
             - /containers/volumes/authentik/data:/data
             - /containers/volumes/authentik/certs:/certs
-            - /containers/volumes/authentik/custom-templates:/templates
+            - /containers/volumes/authentik/custom-templates:/templates:ro
 
 secrets:
     PG_AUTHENTIK_USER:
