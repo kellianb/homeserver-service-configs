@@ -26,11 +26,16 @@ services:
     secrets:
       - cf_api_token
     volumes:
+      # System resources
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
+
+      # Immutable configs
       - ./data/traefik.yml:/traefik.yml:ro
-      - /containers/volumes/traefik/letsencrypt/acme.json:/acme.json
       - ./data/rules:/etc/traefik/rules:ro
+
+      # Mutable volumes
+      - /containers/volumes/traefik/letsencrypt/acme.json:/acme.json
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=aether-net"
