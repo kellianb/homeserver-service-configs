@@ -1,53 +1,53 @@
 services:
-    jellyfin:
-        image: jellyfin/jellyfin:12.4@sha256:fea863d0cd9ec445985d9c75fc6ed64e38a1d2766cf0c250a33d553f4fc1b771
-        container_name: jellyfin
-        user: "1000:3500"
-        restart: unless-stopped
-        read_only: true
-        security_opt:
-            - no-new-privileges:true
-        cap_drop:
-            - ALL
-        networks:
-            - aether-net
-        devices:
-            - /dev/dri/renderD128:/dev/dri/renderD128
-        group_add:
-            - "993"
-        pids_limit: 512
-        mem_limit: 8g
-        environment:
-            - JELLYFIN_CACHE_DIR=/cache
-            - JELLYFIN_CONFIG_DIR=/config
-            - JELLYFIN_DATA_DIR=/data
-            - JELLYFIN_LOG_DIR=/logs
-            - JELLYFIN_PublishedServerUrl=https://jellyfin.kellian.cloud
-        tmpfs:
-            - /tmp:size=512m,noexec,nosuid,nodev
-        volumes:
-            - /containers/volumes/jellyfin/cache:/cache
-            - /containers/volumes/jellyfin/config:/config
-            - /containers/volumes/jellyfin/data:/data
-            - /containers/volumes/jellyfin/logs:/logs
-            - /media:/media:ro
-        labels:
-            - "traefik.enable=true"
+  jellyfin:
+    image: jellyfin/jellyfin:12.4@sha256:fea863d0cd9ec445985d9c75fc6ed64e38a1d2766cf0c250a33d553f4fc1b771
+    container_name: jellyfin
+    user: "1000:3500"
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - aether-net
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+    group_add:
+      - "993"
+    pids_limit: 512
+    mem_limit: 8g
+    environment:
+      - JELLYFIN_CACHE_DIR=/cache
+      - JELLYFIN_CONFIG_DIR=/config
+      - JELLYFIN_DATA_DIR=/data
+      - JELLYFIN_LOG_DIR=/logs
+      - JELLYFIN_PublishedServerUrl=https://jellyfin.kellian.cloud
+    tmpfs:
+      - /tmp:size=512m,noexec,nosuid,nodev
+    volumes:
+      - /containers/volumes/jellyfin/cache:/cache
+      - /containers/volumes/jellyfin/config:/config
+      - /containers/volumes/jellyfin/data:/data
+      - /containers/volumes/jellyfin/logs:/logs
+      - /media:/media:ro
+    labels:
+      - "traefik.enable=true"
 
-            # HTTP redirect
-            - "traefik.http.routers.jellyfin.entrypoints=http"
-            - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.kellian.cloud`)"
-            - "traefik.http.middlewares.jellyfin-https-redirect.redirectscheme.scheme=https"
-            - "traefik.http.routers.jellyfin.middlewares=jellyfin-https-redirect"
+      # HTTP redirect
+      - "traefik.http.routers.jellyfin.entrypoints=http"
+      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.kellian.cloud`)"
+      - "traefik.http.middlewares.jellyfin-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.jellyfin.middlewares=jellyfin-https-redirect"
 
-            # HTTPS router
-            - "traefik.http.routers.jellyfin-secure.entrypoints=https"
-            - "traefik.http.routers.jellyfin-secure.rule=Host(`jellyfin.kellian.cloud`)"
-            - "traefik.http.routers.jellyfin-secure.tls=true"
-            - "traefik.http.routers.jellyfin-secure.tls.certresolver=cloudflare"
+      # HTTPS router
+      - "traefik.http.routers.jellyfin-secure.entrypoints=https"
+      - "traefik.http.routers.jellyfin-secure.rule=Host(`jellyfin.kellian.cloud`)"
+      - "traefik.http.routers.jellyfin-secure.tls=true"
+      - "traefik.http.routers.jellyfin-secure.tls.certresolver=cloudflare"
 
-            - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
+      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
 
 networks:
-    aether-net:
-        external: true
+  aether-net:
+    external: true
