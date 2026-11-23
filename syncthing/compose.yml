@@ -1,23 +1,23 @@
 services:
-    syncthing:
-        image: syncthing/syncthing:2.1.7@sha256:2b71da7c0d0a91a6ae5285ad079226fecc0a365d08b27720e1f7037b018f7546
-        container_name: syncthing
-        hostname: pve01-portainer-syncthing
-        environment:
-            - PUID=1005
-            - PGID=3500
-        volumes:
-            - /documents:/documents
-            - /containers/volumes/syncthing:/var/syncthing
-        network_mode: host
-        restart: unless-stopped
-        user: "1005:3500"
-        healthcheck:
-            test: curl -fkLsS -m 2 127.0.0.1:8384/rest/noauth/health | grep -o --color=never OK || exit 1
-            interval: 1m
-            timeout: 10s
-            retries: 3
+  syncthing:
+    image: syncthing/syncthing:2.1.7@sha256:2b71da7c0d0a91a6ae5285ad079226fecc0a365d08b27720e1f7037b018f7546
+    container_name: syncthing
+    hostname: pve01-portainer-syncthing
+    environment:
+      - PUID=1005
+      - PGID=3500
+    volumes:
+      - /documents:/documents
+      - /containers/volumes/syncthing:/var/syncthing
+    network_mode: host
+    restart: unless-stopped
+    user: "1005:3500"
+    healthcheck:
+      test: curl -fkLsS -m 2 127.0.0.1:8384/rest/noauth/health | grep -o --color=never OK || exit 1
+      interval: 1m
+      timeout: 10s
+      retries: 3
 
 networks:
-    aether-net:
-        external: true
+  aether-net:
+    external: true
