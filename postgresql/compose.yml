@@ -1,59 +1,59 @@
 services:
-    postgresql:
-        image: docker.io/library/postgres:16.16-alpine3.24@sha256:f2f98726820d0342055351c6e9d36e705f5bfffb3dd53ff556325114b08afb6d
-        container_name: postgresql
-        user: "1013:3500"
-        read_only: true
-        tmpfs:
-            - /tmp
-            - /run/postgresql:uid=1013,gid=3500,mode=0755
-        security_opt:
-            - no-new-privileges:true
-        cap_drop:
-            - ALL
-        deploy:
-            resources:
-                limits:
-                    memory: 4g
-                    pids: 512
-        environment:
-            POSTGRES_USER_FILE: /run/secrets/PG_ADMIN_USER
-            POSTGRES_PASSWORD_FILE: /run/secrets/PG_ADMIN_PASSWORD
-        secrets:
-            - PG_ADMIN_USER
-            - PG_ADMIN_PASSWORD
-            - PG_AUTHENTIK_USER
-            - PG_AUTHENTIK_PASSWORD
-        healthcheck:
-            interval: 30s
-            retries: 5
-            start_period: 20s
-            test:
-                - CMD-SHELL
-                - pg_isready -U "$$(cat /run/secrets/PG_ADMIN_USER)"
-            timeout: 5s
-        restart: unless-stopped
-        networks:
-            - postgresql-net
-        volumes:
-            # Immutable configs
-            - ./init:/docker-entrypoint-initdb.d/:ro
+  postgresql:
+    image: docker.io/library/postgres:16.16-alpine3.24@sha256:f2f98726820d0342055351c6e9d36e705f5bfffb3dd53ff556325114b08afb6d
+    container_name: postgresql
+    user: "1013:3500"
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run/postgresql:uid=1013,gid=3500,mode=0755
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+          pids: 512
+    environment:
+      POSTGRES_USER_FILE: /run/secrets/PG_ADMIN_USER
+      POSTGRES_PASSWORD_FILE: /run/secrets/PG_ADMIN_PASSWORD
+    secrets:
+      - PG_ADMIN_USER
+      - PG_ADMIN_PASSWORD
+      - PG_AUTHENTIK_USER
+      - PG_AUTHENTIK_PASSWORD
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 20s
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$$(cat /run/secrets/PG_ADMIN_USER)"
+      timeout: 5s
+    restart: unless-stopped
+    networks:
+      - postgresql-net
+    volumes:
+      # Immutable configs
+      - ./init:/docker-entrypoint-initdb.d/:ro
 
-            # Mutable volumes
-            - /containers/volumes/postgresql:/var/lib/postgresql/data
+      # Mutable volumes
+      - /containers/volumes/postgresql:/var/lib/postgresql/data
 
 secrets:
-    # PostgreSQL
-    PG_ADMIN_USER:
-        file: "/containers/secrets/postgresql/admin_user"
-    PG_ADMIN_PASSWORD:
-        file: "/containers/secrets/postgresql/admin_password"
-    # Authentik
-    PG_AUTHENTIK_USER:
-        file: "/containers/secrets/postgresql/authentik_user"
-    PG_AUTHENTIK_PASSWORD:
-        file: "/containers/secrets/postgresql/authentik_password"
+  # PostgreSQL
+  PG_ADMIN_USER:
+    file: "/containers/secrets/postgresql/admin_user"
+  PG_ADMIN_PASSWORD:
+    file: "/containers/secrets/postgresql/admin_password"
+  # Authentik
+  PG_AUTHENTIK_USER:
+    file: "/containers/secrets/postgresql/authentik_user"
+  PG_AUTHENTIK_PASSWORD:
+    file: "/containers/secrets/postgresql/authentik_password"
 
 networks:
-    postgresql-net:
-        name: postgresql-net
+  postgresql-net:
+    name: postgresql-net
