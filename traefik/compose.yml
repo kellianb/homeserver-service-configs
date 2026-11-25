@@ -6,8 +6,19 @@ services:
     user: "1002:1000"
     group_add:
       - "990" # Docker group
+
+    # Security
     security_opt:
       - no-new-privileges:true
+    read_only: true
+    cap_drop: [ALL]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    mem_limit: 512m
+    memswap_limit: 512m        # same as mem_limit = no swap
+    cpus: 1.0
+    pids_limit: 256
+
     networks:
       - aether-net
     logging:
@@ -18,11 +29,9 @@ services:
     ports:
       - 80:80
       - 443:443
-    # - 443:443/tcp # Uncomment if you want HTTP3
-    # - 443:443/udp # Uncomment if you want HTTP3
     environment:
       CF_DNS_API_TOKEN_FILE: /run/secrets/cf_api_token # note using _FILE for docker secrets
-    # TRAEFIK_DASHBOARD_CREDENTIALS: ${TRAEFIK_DASHBOARD_CREDENTIALS}
+      GOMEMLIMIT: 400MiB       # makes Go GC back off before the cgroup OOM-kills it
     secrets:
       - cf_api_token
     volumes:
