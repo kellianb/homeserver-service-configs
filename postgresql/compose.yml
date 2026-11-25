@@ -57,3 +57,4 @@ secrets:
 networks:
   postgresql-net:
     name: postgresql-net
+    internal: true
